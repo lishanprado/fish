@@ -1,0 +1,10 @@
+{
+  "name": "Fish Trainer",
+  "short_name": "Fish Trainer",
+  "description": "Practice the card game Fish against deduction-based bots.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#edf3f1",
+  "theme_color": "#155f51",
+  "icons": [{"src":"favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

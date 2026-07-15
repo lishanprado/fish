@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fish Trainer — Play Fish Against Deduction Bots</title>
+<meta name="description" content="A browser-based Fish card-game simulator with strategic deduction bots, multiple difficulty levels, and downloadable game reports.">
+<meta name="theme-color" content="#155f51">
+<meta property="og:title" content="Fish Trainer">
+<meta property="og:description" content="Practice Fish against deduction-based bots in 2v2 or 3v3 mode.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#edf3f1;--bg-deep:#dfe9e6;--surface:#ffffff;--surface-soft:#f7faf9;
+  --ink:#172522;--muted:#66736f;--line:#d6e0dd;--line-strong:#b9cac5;
+  --brand:#155f51;--brand-dark:#0f463c;--brand-soft:#dff1eb;--gold:#ad741e;
+  --danger:#9f3a2f;--danger-dark:#7d2c24;--shadow:0 18px 45px rgba(20,48,41,.09);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 0%,#fff 0,transparent 34%),linear-gradient(145deg,var(--bg),var(--bg-deep));color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
+button,select,input,textarea{font:inherit}
+button,select,input{min-height:42px}
+button{border:1px solid var(--line-strong);border-radius:11px;padding:9px 14px;background:var(--surface);color:var(--ink);font-weight:700;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease,background .15s ease}
+button:hover:not(:disabled){transform:translateY(-1px);border-color:#8ca9a1;box-shadow:0 8px 18px rgba(25,67,57,.10)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid rgba(21,95,81,.22);outline-offset:2px}
+button.primary{background:var(--brand);border-color:var(--brand);color:#fff}button.primary:hover:not(:disabled){background:var(--brand-dark)}
+button.warn{background:var(--danger);border-color:var(--danger);color:#fff}button.warn:hover:not(:disabled){background:var(--danger-dark)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.site-header{background:linear-gradient(120deg,#0d3d35,#176655 65%,#1d7562);color:#fff;border-bottom:1px solid rgba(255,255,255,.14)}
+.header-inner{max-width:1480px;margin:auto;padding:22px 22px 20px;display:flex;justify-content:space-between;gap:22px;align-items:center;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:13px}.brand-mark{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);font-size:1.55rem;box-shadow:inset 0 1px rgba(255,255,255,.16)}
+h1{margin:0;font-size:clamp(1.45rem,2.6vw,2rem);letter-spacing:-.035em}.sub{opacity:.86;font-size:.92rem;margin-top:2px}.header-actions{display:flex;gap:9px;flex-wrap:wrap}.site-header button:not(.primary){background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.28);color:#fff}.site-header button:not(.primary):hover{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.42)}.site-header button.primary{background:#fff;color:var(--brand-dark);border-color:#fff}
+main{max-width:1480px;margin:auto;padding:22px;display:grid;grid-template-columns:minmax(0,1.75fr) minmax(310px,.75fr);gap:20px;align-items:start}
+.panel{background:rgba(255,255,255,.94);border:1px solid rgba(185,202,197,.78);border-radius:18px;padding:17px;box-shadow:var(--shadow);backdrop-filter:blur(8px)}
+.panel+.panel{margin-top:18px!important}.scorebar{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px;font-weight:800}.scorebar>span{background:var(--surface-soft);border:1px solid var(--line);border-radius:13px;padding:11px 13px;text-align:center}.scorebar>span:first-child{color:var(--brand-dark)}.scorebar>span:last-child{color:#69491a}
+.players{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:13px 0 16px}.player{position:relative;border:1px solid var(--line);border-radius:14px;padding:12px;background:linear-gradient(180deg,#fff,var(--surface-soft));min-height:90px;overflow:hidden}.player:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#b7c7c2}.player.you:before{background:var(--brand)}.player.active{outline:3px solid rgba(21,95,81,.18);border-color:#6fa394;box-shadow:0 9px 22px rgba(21,95,81,.10)}.player.active:after{content:"TURN";position:absolute;right:8px;top:8px;font-size:.61rem;letter-spacing:.08em;font-weight:900;color:var(--brand);background:var(--brand-soft);border-radius:999px;padding:3px 6px}.name{font-weight:850;padding-right:42px}.team,.small{font-size:.79rem;color:var(--muted)}.meta{font-size:.9rem;margin-top:9px;font-weight:700}
+.controls,.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}.controls label,.grid2 label{display:block;font-size:.76rem;color:var(--muted);font-weight:750;margin-bottom:5px;letter-spacing:.015em}select,input{width:100%;border:1px solid var(--line-strong);border-radius:10px;padding:9px 11px;background:#fff;color:var(--ink)}.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:11px}
+.hand{display:flex;flex-wrap:wrap;gap:11px;min-height:102px;align-items:flex-start}.set-group{display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface-soft)}.set-group-title{width:100%;font-size:.66rem;font-weight:900;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:0}.set-group-cards{display:flex;flex-wrap:wrap;gap:7px}.card{width:76px;height:102px;border:1px solid #aab7b3;border-radius:10px;background:linear-gradient(145deg,#fff,#fbfcfc);padding:7px;font-weight:900;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 3px 8px rgba(30,48,43,.10);transition:transform .15s ease,box-shadow .15s ease}.card:hover{transform:translateY(-3px);box-shadow:0 9px 18px rgba(30,48,43,.14)}.card.red{color:#b12828}.card .mid{font-size:.69rem;line-height:1.08;text-align:center;font-weight:750}.card .bottom{align-self:flex-end;transform:rotate(180deg)}
+.section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}.section-title h2{margin:0;font-size:1.02rem;letter-spacing:-.012em}
+#status,#hint{margin-top:13px;padding:11px 12px;border-radius:11px;min-height:44px}#status{background:#eaf5f1;border:1px solid #bfddd4;font-weight:750;color:#184d41}#hint{background:#fff7e8;border:1px solid #eed39f;color:#5f4311;display:none}
+#log{height:485px;overflow:auto;font-size:.88rem;padding-right:3px}.log-line{padding:9px 4px;border-bottom:1px dashed #dce5e2}.log-line:last-child{border-bottom:none}
+dialog{border:none;border-radius:18px;padding:0;max-width:760px;width:calc(100% - 32px);color:var(--ink);background:var(--surface);box-shadow:0 24px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(8,28,23,.52);backdrop-filter:blur(3px)}.modal-body{padding:21px}.modal-footer{display:flex;justify-content:flex-end;gap:9px;padding:13px 20px;border-top:1px solid var(--line);background:var(--surface-soft)}.assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}.person-box{border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--surface-soft)}
+.site-footer{max-width:1480px;margin:0 auto;padding:2px 22px 28px;color:var(--muted);font-size:.8rem;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+@media(max-width:980px){main{grid-template-columns:1fr}.players{grid-template-columns:repeat(3,1fr)}#log{height:320px}}
+@media(max-width:680px){.header-inner,main{padding-left:14px;padding-right:14px}.header-inner{align-items:flex-start}.brand-mark{width:42px;height:42px}.header-actions{width:100%}.header-actions button{flex:1}.players{grid-template-columns:repeat(2,minmax(0,1fr))}.controls,.grid2,.assign-grid{grid-template-columns:1fr}.scorebar{font-size:.9rem}.panel{padding:14px;border-radius:15px}.section-title{display:block}.section-title .small{display:block;margin-top:4px}.card{width:70px;height:96px}.site-footer{padding-left:14px;padding-right:14px}}
+@media(max-width:420px){.players{grid-template-columns:1fr}.actions button{flex:1}.card{width:66px}}
+
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">♠</div>
+      <div><h1>Fish Trainer</h1><div class="sub" id="subtitle">You are on Team A.</div></div>
+    </div>
+    <div class="header-actions"><button id="rulesBtn">How to play</button><button id="newGameBtn" class="primary">New game</button></div>
+  </div>
+</header>
+
+<main>
+<section>
+<div class="panel">
+<div class="scorebar">
+<span>Team A sets: <span id="scoreA">0</span></span>
+<span>Team B sets: <span id="scoreB">0</span></span>
+</div>
+<div class="actions" style="margin-top:0;margin-bottom:12px">
+<button id="gameReportBtn" disabled>View game report</button>
+</div>
+
+<div class="controls" style="margin-bottom:12px">
+<div><label for="gameMode">Game mode</label><select id="gameMode"><option value="6" selected>3v3 — includes middle set</option><option value="4">2v2 — no middle set</option></select></div>
+<div><label for="historyDepth">Visible move history</label><select id="historyDepth"><option value="1">Last 1 move</option><option value="2" selected>Last 2 moves</option><option value="3">Last 3 moves</option><option value="5">Last 5 moves</option><option value="10">Last 10 moves</option><option value="999">All moves</option></select></div>
+<div><label for="botPacing">Bot pacing</label><select id="botPacing"><option value="auto" selected>Automatic: 5–10 seconds</option><option value="manual">Manual: click Next bot move</option></select></div>
+<div><label>&nbsp;</label><button id="renameBotsBtn" style="width:100%">Players & difficulty</button></div>
+</div>
+<div class="actions" style="margin-top:0;margin-bottom:12px"><button id="nextBotBtn" disabled>Next bot move</button></div>
+
+<div class="players" id="players"></div>
+<div class="section-title"><h2>Your hand</h2><span class="small" id="handCount"></span></div>
+<div class="hand" id="hand"></div>
+</div>
+
+<div class="panel" style="margin-top:16px">
+<div class="section-title"><h2>Your move</h2><span class="small">Ask only for a card in a set you currently hold. A set may be declared at any time.</span></div>
+<div class="controls">
+<div><label for="targetSelect">Opponent</label><select id="targetSelect"></select></div>
+<div><label for="cardSelect">Card to ask for</label><select id="cardSelect"></select></div>
+</div>
+<div class="actions"><button id="askBtn" class="primary">Ask</button><button id="hintBtn">Analyze ask</button><button id="claimBtn" class="warn">Declare a set</button></div>
+<div id="status"></div><div id="hint"></div>
+</div>
+</section>
+
+<aside>
+<div class="panel"><div class="section-title"><h2>Recent moves</h2><span class="small" id="historyLabel">Last 2 moves</span></div><div id="log"></div></div>
+<div class="panel" style="margin-top:16px"><div class="section-title"><h2>Bot strategy</h2></div>
+<div class="small">Novice remembers hard public facts but guesses too freely. Intermediate uses direct public facts and exclusion-based signalling. Advanced also combines exclusions with public hand counts, retaliation risk, set completion, and turn control. Expert applies the same deductions most aggressively with tighter evaluation and almost no noviceness.</div>
+</div>
+</aside>
+</main>
+<footer class="site-footer"><span>Fish Trainer runs entirely in your browser.</span><span>No account, installation, or data collection.</span></footer>
+
+<dialog id="reportDialog">
+<div class="modal-body">
+<h2 style="margin-top:0">Game report</h2>
+<p class="small">This includes every player’s starting hand and the complete move history.</p>
+<textarea id="reportText" readonly style="width:100%;height:420px;border:1px solid var(--line);border-radius:10px;padding:10px;font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace"></textarea>
+</div>
+<div class="modal-footer">
+<button id="copyReportBtn">Copy report</button>
+<button id="downloadReportBtn">Download .txt</button>
+<button id="closeReportBtn" class="primary">Close</button>
+</div>
+</dialog>
+
+<dialog id="claimDialog"><div class="modal-body"><h2 style="margin-top:0">Declare a set</h2><p class="small">Choose a set and assign every card to its exact holder on your team. A wrong declaration gives the set to the other team and removes all six cards from play.</p><label class="small">Set</label><select id="claimSet"></select><div id="claimAssignments" class="assign-grid"></div></div><div class="modal-footer"><button id="cancelClaim">Cancel</button><button id="submitClaim" class="warn">Submit declaration</button></div></dialog>
+
+<dialog id="renameDialog"><div class="modal-body"><h2 style="margin-top:0">Rename players</h2><p class="small">Choose each computer-controlled player’s name and difficulty. Hard facts are respected at every level; higher levels differ mostly in strategic judgment.</p><div id="nameFields" class="assign-grid"></div></div><div class="modal-footer"><button id="cancelRename">Cancel</button><button id="saveNames" class="primary">Save</button></div></dialog>
+
+<dialog id="rulesDialog"><div class="modal-body"><h2 style="margin-top:0">How this simulator works</h2><ul>
+<li>In 3v3, the deck has 54 cards: the standard 52-card deck plus a red and black joker. It includes nine six-card sets.</li>
+<li>The middle set is the four 8s plus the red joker and black joker.</li>
+<li>In 2v2, the middle set is removed, leaving 48 cards and eight sets, divisible evenly among four players.</li>
+<li>Low sets are 2–7. High sets are 9–Ace. The middle set exists only in 3v3.</li>
+<li>If a request succeeds, the asker keeps the turn. If it fails, the target gets the turn.</li><li>Any player may declare a set at any moment, including during another player’s turn. A correct or incorrect declaration removes all six cards in that set from every hand; an incorrect declaration awards the set to the opposing team.</li>
+<li>If you reach zero cards, you enter spectator mode: asking and declaring are disabled, while bot turns continue normally. Bots continue playing until one team reaches the winning score.</li><li>3v3 ends when a team reaches five sets. 2v2 ends when a team reaches four sets.</li>
+<li>After the game, you can view, copy, or download a complete report with starting hands and every move.</li>
+<li>Public denials are hard exclusions. Intermediate, Advanced, and Expert bots repeatedly propagate those exclusions; Advanced and Expert also use public hand counts to force card locations and recognize teammate signalling.</li><li>Bots use intentional known misses only when every legal request is known to miss.</li><li>Bot move selection is isolated behind a fair-play firewall. It receives only the bot’s own hand, public hand counts, and public move history; it cannot inspect hidden opposing or teammate cards.</li><li>Manual bot turns were tested in this build. Bots do not require certainty. When a card is unknown, they estimate who is most likely to hold it and compare the expected value of a hit against the cost of giving that opponent the turn.</li><li>Bot pacing can be automatic or manual.</li>
+</ul></div><div class="modal-footer"><button id="closeRules" class="primary">Close</button></div></dialog>
+
+<script>
+(()=>{
+const suits=[
+ {name:'Spades',symbol:'♠',red:false},
+ {name:'Hearts',symbol:'♥',red:true},
+ {name:'Diamonds',symbol:'♦',red:true},
+ {name:'Clubs',symbol:'♣',red:false}
+];
+const lowRanks=['2','3','4','5','6','7'], highRanks=['9','10','J','Q','K','A'];
+let playerNames=['You','Bot 1','Bot 2','Bot 3','Bot 4','Bot 5'];
+let playerDifficulties=['human','intermediate','intermediate','intermediate','intermediate','intermediate'];
+let game=null,botTimer=null,claimPausedBot=false,botMoveInProgress=false;
+const $=id=>document.getElementById(id);
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+
+function numPlayers(){return Number($('gameMode').value)}
+function teamOf(p){return p%2===0?'A':'B'}
+function activePlayers(){return [...Array(game.numPlayers).keys()]}
+function teammatesOf(p){return activePlayers().filter(x=>teamOf(x)===teamOf(p))}
+function opponentsOf(p){return activePlayers().filter(x=>teamOf(x)!==teamOf(p)&&game.hands[x].length>0)}
+function cid(s,r){return `S${s}:${r}`}
+function jokerId(color){return `J:${color}`}
+function parseCard(id){
+ if(id.startsWith('J:')) return {joker:true,color:id.split(':')[1]};
+ const [ss,rank]=id.split(':'); return {joker:false,suit:Number(ss.slice(1)),rank};
+}
+function cardName(id){
+ const c=parseCard(id);
+ if(c.joker) return `${cap(c.color)} Joker`;
+ return `${c.rank} of ${suits[c.suit].name} ${suits[c.suit].symbol}`;
+}
+function cardShort(id){
+ const c=parseCard(id);
+ if(c.joker) return c.color==='red'?'RJ':'BJ';
+ return `${c.rank}${suits[c.suit].symbol}`;
+}
+function setKey(id){
+ const c=parseCard(id);
+ if(c.joker||c.rank==='8') return 'M';
+ return `${c.suit}-${lowRanks.includes(c.rank)?'L':'H'}`;
+}
+function setLabel(key){
+ if(key==='M') return 'Middle Set: four 8s + two Jokers';
+ const [s,h]=key.split('-'); return `${h==='L'?'Low':'High'} ${suits[Number(s)].name} ${suits[Number(s)].symbol}`;
+}
+function cardsInSet(key){
+ if(key==='M') return [cid(0,'8'),cid(1,'8'),cid(2,'8'),cid(3,'8'),jokerId('black'),jokerId('red')];
+ const [s,h]=key.split('-'); return (h==='L'?lowRanks:highRanks).map(r=>cid(Number(s),r));
+}
+function allSetKeys(){const a=[];for(let s=0;s<4;s++)a.push(`${s}-L`,`${s}-H`);if(game.includeMiddle)a.push('M');return a}
+function hasCard(p,c){return game.hands[p].includes(c)}
+function removeCard(p,c){const i=game.hands[p].indexOf(c);if(i>=0)game.hands[p].splice(i,1)}
+function addCard(p,c){game.hands[p].push(c);sortHand(game.hands[p])}
+function sortHand(h){
+ const order=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+ h.sort((a,b)=>{const A=parseCard(a),B=parseCard(b);if(A.joker&&!B.joker)return 1;if(!A.joker&&B.joker)return-1;if(A.joker&&B.joker)return A.color.localeCompare(B.color);return A.suit-B.suit||order.indexOf(A.rank)-order.indexOf(B.rank)})
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function makeKnowledge(){return Array.from({length:game.numPlayers},()=>({exact:{},inSet:{},noCard:{}}))}
+function markExactAll(c,h){
+ for(const K of game.knowledge){
+  K.exact[c]=h;
+  delete K.noCard[`${h}|${c}`];
+ }
+}
+function markNoAll(p,c){for(const K of game.knowledge){K.noCard[`${p}|${c}`]=true;if(K.exact[c]===p)delete K.exact[c]}}
+function markInAll(p,k){for(const K of game.knowledge)K.inSet[`${p}|${k}`]=true}
+function initOwnKnowledge(){for(let p=0;p<game.numPlayers;p++)for(const c of game.hands[p])game.knowledge[p].exact[c]=p}
+
+function newGame(){
+ clearTimeout(botTimer);
+ const n=numPlayers(), includeMiddle=n===6, deck=[];
+ for(let s=0;s<4;s++)for(const r of [...lowRanks,'8',...highRanks])deck.push(cid(s,r));
+ if(includeMiddle)deck.push(jokerId('black'),jokerId('red')); else for(let s=0;s<4;s++)deck.splice(deck.indexOf(cid(s,'8')),1);
+ shuffle(deck);
+ const hands=Array.from({length:n},()=>[]);
+ deck.forEach((c,i)=>hands[i%n].push(c));hands.forEach(sortHand);
+ const startingHands=hands.map(h=>[...h]);
+ game={numPlayers:n,includeMiddle,hands,startingHands,current:Math.floor(Math.random()*n),score:{A:0,B:0},claimed:new Set(),log:[],events:[],askHistory:[],botAudit:[],knowledge:null,over:false,historyDepth:Number($('historyDepth').value),botPacing:$('botPacing').value};
+ game.knowledge=makeKnowledge();initOwnKnowledge();
+ $('subtitle').textContent=`You are on Team A in ${n===6?'3v3':'2v2'} mode.`;
+ logLine(`New ${n===6?'3v3':'2v2'} game. <strong>${playerNames[game.current]}</strong> starts.`);
+ render();if(game.current!==0)scheduleBot();
+}
+function humanIsSpectating(){
+ return !!game && !game.over && game.hands[0].length===0;
+}
+
+function syncNextBotButton(){
+ const canAdvance=
+  !!game &&
+  !game.over &&
+  game.botPacing==='manual' &&
+  game.current!==0 &&
+  !$('claimDialog').open &&
+  !botMoveInProgress;
+
+ $('nextBotBtn').disabled=!canAdvance;
+}
+function render(){
+ if(game&&!game.over)ensureCurrentPlayerCanAct();
+
+ renderPlayers();
+ renderHand();
+ renderControls();
+ $('scoreA').textContent=game.score.A;
+ $('scoreB').textContent=game.score.B;
+
+ if(game.over){
+  $('status').textContent=
+   `Game over. Team ${game.score.A>game.score.B?'A':'B'} wins `+
+   `${Math.max(game.score.A,game.score.B)}–${Math.min(game.score.A,game.score.B)}.`;
+ }else if(humanIsSpectating()){
+  $('status').textContent=
+   `You have no cards left and are spectating. `+
+   `${playerNames[game.current]}'s turn.`;
+ }else if(game.current===0){
+  $('status').textContent='Your turn.';
+ }else{
+  $('status').textContent=`${playerNames[game.current]}'s turn.`;
+ }
+
+ $('askBtn').disabled=
+  game.over||
+  game.current!==0||
+  game.hands[0].length===0;
+
+ $('hintBtn').disabled=$('askBtn').disabled;
+
+ // Once the human has no cards, they are a spectator and cannot make
+ // further declarations.
+ $('claimBtn').disabled=
+  game.over||
+  game.hands[0].length===0;
+
+ $('gameReportBtn').disabled=!game.over;
+ syncNextBotButton();
+}
+function renderPlayers(){$('players').innerHTML='';for(let p=0;p<game.numPlayers;p++){const d=document.createElement('div');d.className=`player ${p===0?'you':''} ${p===game.current?'active':''}`;d.innerHTML=`<div class="name">${playerNames[p]}</div><div class="team">Team ${teamOf(p)}${p===0?'':` · ${cap(playerDifficulties[p])}`}</div><div class="meta">${game.hands[p].length} cards</div>`;$('players').appendChild(d)}}
+function renderHand(){
+ $('hand').innerHTML='';
+ $('handCount').textContent=`${game.hands[0].length} cards`;
+
+ if(game.hands[0].length===0){
+  const note=document.createElement('div');
+  note.className='small';
+  note.textContent='You have no cards left. Spectator mode is active.';
+  $('hand').appendChild(note);
+  return;
+ }
+
+ const preferredOrder=[];
+ for(let s=0;s<4;s++) preferredOrder.push(`${s}-L`,`${s}-H`);
+ if(game.includeMiddle) preferredOrder.push('M');
+
+ const groups=new Map();
+ for(const id of game.hands[0]){
+   const key=setKey(id);
+   if(!groups.has(key)) groups.set(key,[]);
+   groups.get(key).push(id);
+ }
+
+ for(const key of preferredOrder){
+   if(!groups.has(key)) continue;
+
+   const group=document.createElement('div');
+   group.className='set-group';
+
+   const title=document.createElement('div');
+   title.className='set-group-title';
+   title.textContent=setLabel(key);
+
+   const cardsWrap=document.createElement('div');
+   cardsWrap.className='set-group-cards';
+
+   for(const id of groups.get(key)){
+     const c=parseCard(id),d=document.createElement('div');
+     d.className=`card ${(c.joker&&c.color==='red')||(!c.joker&&suits[c.suit].red)?'red':''}`;
+     d.innerHTML=`<span>${cardShort(id)}</span><span class="mid">${cardName(id)}</span><span class="bottom">${cardShort(id)}</span>`;
+     cardsWrap.appendChild(d);
+   }
+
+   group.appendChild(title);
+   group.appendChild(cardsWrap);
+   $('hand').appendChild(group);
+ }
+}
+function legalAskCards(p){const held=new Set(game.hands[p].map(setKey)),out=[];for(const k of held)if(!game.claimed.has(k))for(const c of cardsInSet(k))if(!hasCard(p,c))out.push(c);return out}
+function renderControls(){$('targetSelect').innerHTML='';$('cardSelect').innerHTML='';for(const p of opponentsOf(0)){const o=document.createElement('option');o.value=p;o.textContent=`${playerNames[p]} (${game.hands[p].length})`;$('targetSelect').appendChild(o)}for(const c of legalAskCards(0)){const o=document.createElement('option');o.value=c;o.textContent=`${cardName(c)} — ${setLabel(setKey(c))}`;$('cardSelect').appendChild(o)}}
+function renderLog(){const d=game.historyDepth,entries=d>=999?game.log:game.log.slice(-d);$('log').innerHTML='';for(const e of entries){const x=document.createElement('div');x.className='log-line';x.innerHTML=e;$('log').appendChild(x)}$('historyLabel').textContent=d>=999?'All moves':`Last ${d} move${d===1?'':'s'}`}
+function stripHtml(t){
+ const div=document.createElement('div');
+ div.innerHTML=t;
+ return div.textContent || div.innerText || '';
+}
+function logLine(t){
+ game.log.push(t);
+ game.events.push(stripHtml(t));
+ renderLog();
+}
+
+function performAsk(a,t,c){
+ if(game.over)return;const k=setKey(c);if(teamOf(a)===teamOf(t)||!game.hands[a].some(x=>setKey(x)===k))return;
+ markInAll(a,k);markNoAll(a,c);
+ const success=hasCard(t,c);
+ game.askHistory.push({asker:a,target:t,card:c,setK:k,success});
+ if(success){removeCard(t,c);addCard(a,c);markExactAll(c,a);logLine(`<strong>${playerNames[a]}</strong> asked ${playerNames[t]} for the ${cardName(c)}: <strong>yes</strong>.`);game.current=a}
+ else{markNoAll(t,c);logLine(`<strong>${playerNames[a]}</strong> asked ${playerNames[t]} for the ${cardName(c)}: no.`);game.current=t}
+ runBotDeductions();
+ render();
+ autoClaimBots();
+ if(!game.over&&game.current!==0)scheduleBot()
+}
+function estimateDanger(t,o){let d=0,K=game.knowledge[o];for(const k of allSetKeys()){const n=cardsInSet(k).filter(c=>K.exact[c]===t).length;if(n>=3)d+=n}return d}
+function playerHasLegalAsk(p){
+ return (
+  p>=0 &&
+  p<game.numPlayers &&
+  game.hands[p].length>0 &&
+  opponentsOf(p).length>0 &&
+  legalAskCards(p).length>0
+ );
+}
+
+function possibleHoldersForKnowledge(K,card){
+ const exact=K.exact[card];
+ if(exact!==undefined)return [exact];
+
+ return activePlayers().filter(holder=>
+  game.hands[holder].length>0 &&
+  !K.noCard[`${holder}|${card}`]
+ );
+}
+
+function inferKnowledgeForBot(p){
+ const level=playerDifficulties[p];
+ if(level==='novice')return false;
+
+ const K=game.knowledge[p];
+ const useHandCounts=level==='advanced'||level==='expert';
+ let changed=false;
+ let passChanged=true;
+ let guard=0;
+
+ while(passChanged&&guard++<20){
+  passChanged=false;
+
+  // Basic Fish deduction: once every other possible holder has publicly
+  // denied a card, the remaining holder is forced.
+  for(const setK of allSetKeys()){
+   if(game.claimed.has(setK))continue;
+   for(const card of cardsInSet(setK)){
+    if(K.exact[card]!==undefined)continue;
+    const possible=possibleHoldersForKnowledge(K,card);
+    if(possible.length===1){
+     K.exact[card]=possible[0];
+     delete K.noCard[`${possible[0]}|${card}`];
+     passChanged=changed=true;
+    }
+   }
+  }
+
+  if(!useHandCounts)continue;
+
+  // Advanced/Expert also combine those exclusions with public hand counts.
+  // If a player still needs N unknown cards and exactly N cards can possibly
+  // belong to that player, all of them are forced to that player.
+  const exactCounts=Array(game.numPlayers).fill(0);
+  for(const setK of allSetKeys()){
+   if(game.claimed.has(setK))continue;
+   for(const card of cardsInSet(setK)){
+    const holder=K.exact[card];
+    if(holder!==undefined)exactCounts[holder]++;
+   }
+  }
+
+  for(const holder of activePlayers()){
+   const slots=game.hands[holder].length-exactCounts[holder];
+   if(slots<=0)continue;
+
+   const candidates=[];
+   for(const setK of allSetKeys()){
+    if(game.claimed.has(setK))continue;
+    for(const card of cardsInSet(setK)){
+     if(K.exact[card]!==undefined)continue;
+     if(possibleHoldersForKnowledge(K,card).includes(holder))candidates.push(card);
+    }
+   }
+
+   if(candidates.length===slots){
+    for(const card of candidates){
+     if(K.exact[card]===undefined){
+      K.exact[card]=holder;
+      delete K.noCard[`${holder}|${card}`];
+      passChanged=changed=true;
+     }
+    }
+   }
+  }
+ }
+
+ return changed;
+}
+
+function runBotDeductions(){
+ if(!game||game.over)return;
+ for(let p=1;p<game.numPlayers;p++)inferKnowledgeForBot(p);
+}
+
+function knownCompleteSetForBot(p){
+ inferKnowledgeForBot(p);
+ const K=game.knowledge[p];
+
+ for(const setK of allSetKeys()){
+  if(game.claimed.has(setK))continue;
+
+  const cards=cardsInSet(setK);
+  const allKnownOnTeam=cards.every(card=>{
+   const holder=K.exact[card];
+   return holder!==undefined && teamOf(holder)===teamOf(p);
+  });
+
+  if(allKnownOnTeam){
+   const assignment={};
+   for(const card of cards)assignment[card]=K.exact[card];
+   return {setK,assignment};
+  }
+ }
+
+ return null;
+}
+
+function forceBotDeclarationIfNeeded(p){
+ const declaration=knownCompleteSetForBot(p);
+ if(!declaration)return false;
+
+ resolveClaim(p,declaration.setK,declaration.assignment);
+ return true;
+}
+
+function ensureCurrentPlayerCanAct(){
+ if(!game||game.over)return false;
+
+ const validCurrent=
+  game.current>=0 &&
+  game.current<game.numPlayers &&
+  game.hands[game.current].length>0;
+
+ if(validCurrent)return true;
+
+ const originalTeam=
+  game.current>=0 && game.current<game.numPlayers
+   ? teamOf(game.current)
+   : 'A';
+
+ // Preserve the turn within the same team when possible.
+ const teammate=activePlayers().find(
+  p=>
+   p!==game.current &&
+   teamOf(p)===originalTeam &&
+   game.hands[p].length>0
+ );
+
+ if(teammate!==undefined){
+  game.current=teammate;
+  return true;
+ }
+
+ // If the entire team is out of cards, let any remaining player continue so
+ // the human can spectate the determined remainder.
+ const anyone=activePlayers().find(
+  p=>game.hands[p].length>0
+ );
+
+ if(anyone!==undefined){
+  game.current=anyone;
+  return true;
+ }
+
+ return false;
+}
+
+/* BOT_STRATEGY_FIREWALL_START
+   Everything below receives a sanitized view. It cannot inspect hidden hands.
+*/
+function makeBotView(p){
+ inferKnowledgeForBot(p);
+ const K=game.knowledge[p];
+
+ const view={
+  player:p,
+  team:teamOf(p),
+  level:playerDifficulties[p],
+  numPlayers:game.numPlayers,
+
+  // Private information legitimately available to this bot.
+  ownHand:[...game.hands[p]],
+
+  // Public information visible to every player.
+  handCounts:game.hands.map(hand=>hand.length),
+  activePlayers:[...activePlayers()],
+  claimedSets:[...game.claimed],
+  setKeys:[...allSetKeys()],
+
+  // This bot's own memory: its private hand plus publicly observed facts.
+  knowledge:{
+   exact:{...K.exact},
+   inSet:{...K.inSet},
+   noCard:{...K.noCard}
+  }
+ };
+
+ return Object.freeze(view);
+}
+
+function viewOpponents(view){
+ return view.activePlayers.filter(
+  p=>teamOf(p)!==view.team && view.handCounts[p]>0
+ );
+}
+
+function viewLegalAskCards(view){
+ const heldSets=new Set(view.ownHand.map(setKey));
+ const claimed=new Set(view.claimedSets);
+ const ownCards=new Set(view.ownHand);
+ const result=[];
+
+ for(const setK of heldSets){
+  if(claimed.has(setK))continue;
+  for(const card of cardsInSet(setK)){
+   if(!ownCards.has(card))result.push(card);
+  }
+ }
+
+ return result;
+}
+
+function viewLegalMoves(view){
+ const cards=viewLegalAskCards(view);
+ const opponents=viewOpponents(view);
+ const moves=[];
+
+ for(const card of cards){
+  for(const target of opponents)moves.push({card,target});
+ }
+
+ return moves;
+}
+
+function viewDanger(view,target){
+ let danger=0;
+ const K=view.knowledge;
+
+ for(const setK of view.setKeys){
+  const known=cardsInSet(setK).filter(card=>K.exact[card]===target).length;
+  if(known>=3)danger+=known;
+ }
+
+ return danger;
+}
+
+function candidateWeights(view,card){
+ const K=view.knowledge;
+ const exact=K.exact[card];
+ const setK=setKey(card);
+ const weights={};
+
+ if(exact!==undefined){
+  weights[exact]=1;
+  return weights;
+ }
+
+ for(const holder of view.activePlayers){
+  if(holder===view.player)continue;
+  if(view.handCounts[holder]===0)continue;
+  if(K.noCard[`${holder}|${card}`])continue;
+
+  let weight=1;
+
+  // A legal ask proves that the player held at least one card in the set at
+  // that moment. This is public evidence, though it may become stale.
+  if(K.inSet[`${holder}|${setK}`])weight*=1.75;
+
+  // Publicly known concentration in the same set modestly increases weight.
+  const knownSameSet=cardsInSet(setK).filter(
+   other=>K.exact[other]===holder
+  ).length;
+  weight*=1+0.30*knownSameSet;
+
+  weights[holder]=weight;
+ }
+
+ return weights;
+}
+
+function estimateHitProbability(view,target,card){
+ const K=view.knowledge;
+ const exact=K.exact[card];
+
+ if(exact!==undefined)return exact===target?1:0;
+ if(K.noCard[`${target}|${card}`])return 0;
+
+ const weights=candidateWeights(view,card);
+ const total=Object.values(weights).reduce((sum,w)=>sum+w,0);
+
+ if(total<=0)return 0;
+ return (weights[target]||0)/total;
+}
+
+function knownCountInSetForPlayerView(view,player,setK){
+ return cardsInSet(setK).filter(
+  card=>view.knowledge.exact[card]===player
+ ).length;
+}
+
+function knownCountInSetForTeamView(view,team,setK){
+ return cardsInSet(setK).filter(card=>{
+  const holder=view.knowledge.exact[card];
+  return holder!==undefined&&teamOf(holder)===team;
+ }).length;
+}
+
+function difficultyConfig(level){
+ return {
+  novice:{
+   probabilitySharpness:0.72,hitCardValue:65,retainTurnValue:28,
+   setProgressValue:10,nearCompletionBonus:35,exactBonus:220,
+   infoGainValue:5,dangerWeight:4,retaliationWeight:4,
+   noise:30,topBand:45
+  },
+  intermediate:{
+   probabilitySharpness:0.90,hitCardValue:78,retainTurnValue:42,
+   setProgressValue:15,nearCompletionBonus:60,exactBonus:500,
+   infoGainValue:8,dangerWeight:8,retaliationWeight:8,
+   noise:12,topBand:18
+  },
+  advanced:{
+   probabilitySharpness:1.00,hitCardValue:88,retainTurnValue:58,
+   setProgressValue:21,nearCompletionBonus:95,exactBonus:900,
+   infoGainValue:11,dangerWeight:13,retaliationWeight:13,
+   noise:4,topBand:5
+  },
+  expert:{
+   probabilitySharpness:1.08,hitCardValue:94,retainTurnValue:68,
+   setProgressValue:27,nearCompletionBonus:135,exactBonus:1400,
+   infoGainValue:14,dangerWeight:18,retaliationWeight:18,
+   noise:0.5,topBand:0
+  }
+ }[level]||{
+  probabilitySharpness:0.90,hitCardValue:78,retainTurnValue:42,
+  setProgressValue:15,nearCompletionBonus:60,exactBonus:500,
+  infoGainValue:8,dangerWeight:8,retaliationWeight:8,
+  noise:12,topBand:18
+ };
+}
+
+function evaluateBotMove(view,move){
+ const {card,target}=move;
+ const config=difficultyConfig(view.level);
+ const K=view.knowledge;
+ const setK=setKey(card);
+ const exact=K.exact[card];
+
+ let pHit=estimateHitProbability(view,target,card);
+ pHit=Math.pow(pHit,config.probabilitySharpness);
+
+ const ownSetCount=view.ownHand.filter(c=>setKey(c)===setK).length;
+ const publicTeamCount=knownCountInSetForTeamView(view,view.team,setK);
+ const targetKnownCount=knownCountInSetForPlayerView(view,target,setK);
+ const danger=viewDanger(view,target);
+
+ let hitValue=
+  config.hitCardValue+
+  config.retainTurnValue+
+  config.setProgressValue*(ownSetCount+publicTeamCount);
+
+ if(ownSetCount>=3)hitValue+=20;
+ if(ownSetCount>=4)hitValue+=config.nearCompletionBonus;
+ if(ownSetCount>=5)hitValue+=config.nearCompletionBonus*1.5;
+ if(targetKnownCount===1)hitValue+=18;
+ if(exact===target)hitValue+=config.exactBonus;
+
+ const publiclyKnownOwnCards=view.ownHand.filter(
+  c=>setKey(c)===setK&&K.exact[c]===view.player
+ ).length;
+
+ const missValue=
+  config.infoGainValue-
+  config.dangerWeight*danger-
+  config.retaliationWeight*publiclyKnownOwnCards;
+
+ let score=pHit*hitValue+(1-pHit)*missValue;
+
+ if(K.inSet[`${target}|${setK}`])score+=8;
+ score+=targetKnownCount*5;
+ if(pHit===0)score-=65;
+ score+=Math.random()*config.noise;
+
+ const candidates=candidateWeights(view,card);
+ const plausibleHolders=Object.keys(candidates).map(Number);
+
+ return {
+  ...move,
+  pHit,
+  hitValue,
+  missValue,
+  score,
+  audit:{
+   exactHolder:exact,
+   targetKnownInSet:targetKnownCount,
+   targetPubliclyActive:!!K.inSet[`${target}|${setK}`],
+   plausibleHolders,
+   danger
+  }
+ };
+}
+
+function chooseBotMove(view){
+ const moves=viewLegalMoves(view);
+ if(!moves.length)return null;
+
+ const evaluated=moves.map(move=>evaluateBotMove(view,move));
+
+ // A public "no" is a hard exclusion at every difficulty. Known misses are
+ // legal in Fish, but bots may use them only when every legal request is
+ // publicly known to miss. This prevents repeated requests to a player who
+ // has already denied the exact card while uncertain productive asks remain.
+ const productive=evaluated.filter(move=>move.pHit>0);
+ const pool=productive.length?productive:evaluated;
+
+ pool.sort((a,b)=>b.score-a.score);
+
+ const config=difficultyConfig(view.level);
+
+ if(config.topBand>0){
+  const best=pool[0].score;
+  const nearBest=pool.filter(move=>best-move.score<=config.topBand);
+  return nearBest[Math.floor(Math.random()*nearBest.length)];
+ }
+
+ return pool[0];
+}
+
+function fallbackBotMove(view){
+ const moves=viewLegalMoves(view);
+ if(!moves.length)return null;
+
+ const K=view.knowledge;
+
+ for(const move of moves){
+  if(K.exact[move.card]===move.target){
+   return {
+    ...move,
+    pHit:1,
+    score:0,
+    audit:{
+     exactHolder:move.target,
+     targetKnownInSet:knownCountInSetForPlayerView(
+      view,move.target,setKey(move.card)
+     ),
+     targetPubliclyActive:!!K.inSet[
+      `${move.target}|${setKey(move.card)}`
+     ],
+     plausibleHolders:[move.target],
+     danger:viewDanger(view,move.target),
+     fallback:true
+    }
+   };
+  }
+ }
+
+ const ranked=moves.map(move=>({
+  ...move,
+  pHit:estimateHitProbability(view,move.target,move.card),
+  safety:-viewDanger(view,move.target)
+ }));
+
+ const productive=ranked.filter(move=>move.pHit>0);
+ const pool=productive.length?productive:ranked;
+
+ pool.sort(
+  (a,b)=>b.pHit-a.pHit||b.safety-a.safety
+ );
+
+ const move=pool[0];
+ return {
+  ...move,
+  score:0,
+  audit:{
+   exactHolder:K.exact[move.card],
+   targetKnownInSet:knownCountInSetForPlayerView(
+    view,move.target,setKey(move.card)
+   ),
+   targetPubliclyActive:!!K.inSet[
+    `${move.target}|${setKey(move.card)}`
+   ],
+   plausibleHolders:Object.keys(candidateWeights(view,move.card)).map(Number),
+   danger:viewDanger(view,move.target),
+   fallback:true
+  }
+ };
+}
+/* BOT_STRATEGY_FIREWALL_END */
+function recordBotDecision(view,move){
+ if(!view||!move)return;
+
+ const audit=move.audit||{};
+ const plausible=(audit.plausibleHolders||[])
+  .map(p=>playerNames[p])
+  .join(', ')||'none';
+
+ const reasonParts=[
+  `estimated hit chance ${(100*(move.pHit||0)).toFixed(1)}%`,
+  `plausible holders: ${plausible}`
+ ];
+
+ if(audit.exactHolder!==undefined){
+  reasonParts.push(`public exact holder: ${playerNames[audit.exactHolder]}`);
+ }
+ if(audit.targetPubliclyActive){
+  reasonParts.push('target publicly active in this set');
+ }
+ if(audit.targetKnownInSet){
+  reasonParts.push(
+   `${audit.targetKnownInSet} publicly located card(s) in this set at target`
+  );
+ }
+ if(audit.danger){
+  reasonParts.push(`target danger score ${audit.danger}`);
+ }
+ if(audit.fallback)reasonParts.push('fallback evaluator');
+ if(audit.emergency)reasonParts.push('emergency legal move');
+ if(audit.replacedKnownMiss)reasonParts.push('known miss replaced by a productive ask');
+
+ game.botAudit.push(
+  `${playerNames[view.player]} (${cap(view.level)}) chose to ask `+
+  `${playerNames[move.target]} for ${cardName(move.card)} — `+
+  reasonParts.join('; ')+'.'
+ );
+}
+
+function removeSetFromPlay(setK){
+ const setCards=new Set(cardsInSet(setK));
+ const removed=[];
+
+ for(let p=0;p<game.numPlayers;p++){
+  const remaining=[];
+
+  for(const card of game.hands[p]){
+   if(setCards.has(card)){
+    removed.push({player:p,card});
+   }else{
+    remaining.push(card);
+   }
+  }
+
+  game.hands[p]=remaining;
+ }
+
+ // Remove every stale public-memory entry for the cards and set.
+ for(const K of game.knowledge){
+  for(const card of setCards){
+   delete K.exact[card];
+
+   for(let p=0;p<game.numPlayers;p++){
+    delete K.noCard[`${p}|${card}`];
+   }
+  }
+
+  for(let p=0;p<game.numPlayers;p++){
+   delete K.inSet[`${p}|${setK}`];
+  }
+ }
+
+ if(removed.length!==6){
+  console.error(
+   `Set-removal invariant failed for ${setK}: removed ${removed.length} cards instead of 6.`,
+   removed
+  );
+ }
+
+ return removed;
+}
+
+function resolveNoOpponentCards(){
+ const currentTeam=teamOf(game.current);
+ const opposingPlayers=activePlayers().filter(p=>teamOf(p)!==currentTeam);
+
+ if(opposingPlayers.some(p=>game.hands[p].length>0))return false;
+
+ const remainingSets=allSetKeys().filter(k=>!game.claimed.has(k));
+ if(!remainingSets.length)return false;
+
+ const target=game.numPlayers===6?5:4;
+
+ for(const k of remainingSets){
+  if(game.score[currentTeam]>=target)break;
+  game.score[currentTeam]++;
+  game.claimed.add(k);
+  const removed=removeSetFromPlay(k);
+  logLine(
+   `<strong>Automatic resolution:</strong> no opponent has cards remaining. `+
+   `Team ${currentTeam} receives ${setLabel(k)} and all ${removed.length} cards are removed.`
+  );
+ }
+
+ checkGameOver();
+ render();
+ return true;
+}
+function scheduleBot(){
+ clearTimeout(botTimer);
+ botMoveInProgress=false;
+
+ if(!ensureCurrentPlayerCanAct()){
+  render();
+  return;
+ }
+
+ if(game.over||game.current===0){
+  render();
+  return;
+ }
+
+ if(resolveNoOpponentCards())return;
+
+ if(game.botPacing==='manual'){
+  $('nextBotBtn').disabled=false;
+  $('status').textContent=`${playerNames[game.current]} is ready. Click “Next bot move.”`;
+  return;
+ }
+
+ $('nextBotBtn').disabled=true;
+ const delay=5000+Math.floor(Math.random()*5001);
+ $('status').textContent=`${playerNames[game.current]} is thinking...`;
+ botTimer=setTimeout(advanceBotOneMove,delay);
+}
+
+function advanceBotOneMove(){
+ if(!game||game.over||game.current===0||botMoveInProgress)return;
+
+ botMoveInProgress=true;
+ $('nextBotBtn').disabled=true;
+
+ try{
+  if(!ensureCurrentPlayerCanAct()){
+   $('status').textContent='No player has cards remaining.';
+   return;
+  }
+
+  if(game.current===0){
+   render();
+   return;
+  }
+
+  if(resolveNoOpponentCards())return;
+
+  const actingPlayer=game.current;
+
+  // A bot holding a fully known set can have no legal request. It must
+  // declare rather than freeze.
+  if(!playerHasLegalAsk(actingPlayer)){
+   if(forceBotDeclarationIfNeeded(actingPlayer)){
+    botMoveInProgress=false;
+    if(!game.over&&game.current!==0)scheduleBot();
+    else render();
+    return;
+   }
+
+   const teammate=teammatesOf(actingPlayer).find(
+    p=>p!==actingPlayer && (
+     playerHasLegalAsk(p) ||
+     knownCompleteSetForBot(p)!==null
+    )
+   );
+
+   if(teammate!==undefined){
+    game.current=teammate;
+    logLine(
+     `<strong>${playerNames[actingPlayer]}</strong> had no available action and `+
+     `passed control to ${playerNames[teammate]}.`
+    );
+    render();
+    botMoveInProgress=false;
+    if(!game.over&&game.current!==0)scheduleBot();
+    return;
+   }
+
+   // This is a defensive last resort. It should be unreachable in a valid
+   // position, but it keeps manual mode responsive rather than deadlocking.
+   const another=activePlayers().find(
+    p=>p!==0 && p!==actingPlayer && game.hands[p].length>0
+   );
+
+   if(another!==undefined){
+    game.current=another;
+    logLine(
+     `<strong>Turn recovery:</strong> control moved to ${playerNames[another]}.`
+    );
+    render();
+    botMoveInProgress=false;
+    if(!game.over&&game.current!==0)scheduleBot();
+    return;
+   }
+
+   $('status').textContent='No legal action exists; a completed set may need to be declared.';
+   botMoveInProgress=false;
+   if(!game.over&&game.current!==0)scheduleBot();
+   return;
+  }
+
+  const botView=makeBotView(actingPlayer);
+  let move=chooseBotMove(botView);
+  if(!move)move=fallbackBotMove(botView);
+
+  if(!move){
+   throw new Error('The bot had legal asks but the move evaluator returned no move.');
+  }
+
+  const allEvaluated=viewLegalMoves(botView).map(candidate=>({
+   ...candidate,
+   pHit:estimateHitProbability(botView,candidate.target,candidate.card)
+  }));
+  const productiveAlternatives=allEvaluated.filter(candidate=>candidate.pHit>0);
+
+  if(
+   estimateHitProbability(botView,move.target,move.card)===0 &&
+   productiveAlternatives.length
+  ){
+   productiveAlternatives.sort((a,b)=>b.pHit-a.pHit);
+   move=productiveAlternatives[0];
+   move.audit={...(move.audit||{}),replacedKnownMiss:true};
+  }
+
+  recordBotDecision(botView,move);
+  botMoveInProgress=false;
+  performAsk(actingPlayer,move.target,move.card);
+  return;
+
+ }catch(error){
+  console.error('Bot turn failed:',error);
+
+  // Emergency move: select the first genuinely legal ask. This guarantees
+  // that a strategy bug cannot permanently block the game.
+  const actingPlayer=game.current;
+  const emergencyView=
+   actingPlayer!==0 && actingPlayer<game.numPlayers
+    ? makeBotView(actingPlayer)
+    : null;
+  const emergencyMoves=emergencyView
+   ? viewLegalMoves(emergencyView)
+   : [];
+
+  if(emergencyMoves.length){
+   const evaluatedEmergency=emergencyMoves.map(move=>({
+    ...move,
+    pHit:estimateHitProbability(emergencyView,move.target,move.card)
+   }));
+   const productiveEmergency=evaluatedEmergency.filter(move=>move.pHit>0);
+   productiveEmergency.sort((a,b)=>b.pHit-a.pHit);
+   evaluatedEmergency.sort((a,b)=>b.pHit-a.pHit);
+   const move=(productiveEmergency.length?productiveEmergency:evaluatedEmergency)[0];
+
+   recordBotDecision(emergencyView,{
+    ...move,
+    score:0,
+    audit:{emergency:true}
+   });
+   botMoveInProgress=false;
+   performAsk(actingPlayer,move.target,move.card);
+   return;
+  }
+
+  $('status').textContent=
+   `Bot turn could not find an action: ${error.message}`;
+ }finally{
+  if(botMoveInProgress)botMoveInProgress=false;
+
+  if(
+   game &&
+   !game.over &&
+   game.botPacing==='manual' &&
+   game.current!==0 &&
+   !$('claimDialog').open
+  ){
+   $('nextBotBtn').disabled=false;
+  }
+ }
+}
+
+function botTurn(){
+ advanceBotOneMove();
+}
+
+function autoClaimBots(){
+ runBotDeductions();
+ for(let p=1;p<game.numPlayers;p++){
+  const level=playerDifficulties[p];
+  const delayChance = level==='novice' ? 0.28 : level==='intermediate' ? 0.10 : level==='advanced' ? 0.03 : 0.0;
+
+  for(const k of allSetKeys()){
+   if(game.claimed.has(k))continue;
+   const cs=cardsInSet(k);
+   const ok=cs.every(c=>game.knowledge[p].exact[c]!==undefined&&teamOf(game.knowledge[p].exact[c])===teamOf(p));
+   if(ok){
+    if(Math.random()<delayChance) return false;
+    const a={};
+    for(const c of cs)a[c]=game.knowledge[p].exact[c];
+    resolveClaim(p,k,a);
+    return true;
+   }
+  }
+ }
+ return false;
+}
+function resolveClaim(p,k,a){
+ if(game.over||game.claimed.has(k))return false;
+
+ const cards=cardsInSet(k);
+ const declaringTeam=teamOf(p);
+ let correct=true;
+
+ for(const card of cards){
+  const actualHolder=game.hands.findIndex(
+   hand=>hand.includes(card)
+  );
+
+  if(
+   actualHolder<0 ||
+   a[card]!==actualHolder ||
+   teamOf(actualHolder)!==declaringTeam
+  ){
+   correct=false;
+  }
+ }
+
+ const winningTeam=
+  correct
+   ? declaringTeam
+   : declaringTeam==='A'?'B':'A';
+
+ game.score[winningTeam]++;
+ game.claimed.add(k);
+
+ // This must happen before logging/rendering so the visible hand immediately
+ // reflects the declaration.
+ const removed=removeSetFromPlay(k);
+
+ logLine(
+  `<strong>${playerNames[p]}</strong> declared ${setLabel(k)}: `+
+  `<strong>${correct?'correct':'wrong'}</strong>. `+
+  `Team ${winningTeam} gets the set. `+
+  `All six cards were removed from play.`
+ );
+
+ game.events.push(
+  `Set removal detail: `+
+  removed
+   .map(({player,card})=>`${cardName(card)} from ${playerNames[player]}`)
+   .join('; ')
+ );
+
+ ensureCurrentPlayerCanAct();
+ checkGameOver();
+ render();
+
+ return correct;
+}
+
+function checkGameOver(){
+ const target=game.numPlayers===6?5:4;
+ if(game.score.A>=target || game.score.B>=target){
+   game.over=true;
+   clearTimeout(botTimer);
+   const winner=game.score.A>game.score.B?'A':'B';
+   logLine(`<strong>Game over:</strong> Team ${winner} wins ${game.score.A}–${game.score.B}.`);
+   $('gameReportBtn').disabled=false;
+ }
+}
+
+function buildGameReport(){
+ const mode=game.numPlayers===6?'3v3':'2v2';
+ const target=game.numPlayers===6?5:4;
+ const lines=[];
+ lines.push('FISH TRAINER GAME REPORT');
+ lines.push('========================');
+ lines.push(`Mode: ${mode}`);
+ lines.push(`Winning condition: first team to ${target} sets`);
+ lines.push(`Final score: Team A ${game.score.A} - Team B ${game.score.B}`);
+ lines.push('');
+
+ lines.push('PLAYERS');
+ lines.push('-------');
+ for(let p=0;p<game.numPlayers;p++){
+   lines.push(`${p}. ${playerNames[p]} — Team ${teamOf(p)}${p===0?' (Human)':` (${cap(playerDifficulties[p])})`}`);
+ }
+ lines.push('');
+
+ lines.push('STARTING HANDS');
+ lines.push('--------------');
+ for(let p=0;p<game.numPlayers;p++){
+   lines.push(`${playerNames[p]} (Team ${teamOf(p)}):`);
+   const grouped={};
+   for(const c of game.startingHands[p]){
+     const k=setKey(c);
+     if(!grouped[k]) grouped[k]=[];
+     grouped[k].push(c);
+   }
+   for(const k of allSetKeys()){
+     if(!grouped[k]) continue;
+     lines.push(`  ${setLabel(k)}: ${grouped[k].map(cardName).join(', ')}`);
+   }
+   lines.push('');
+ }
+
+ lines.push('COMPLETE MOVE HISTORY');
+ lines.push('---------------------');
+ game.events.forEach((event,i)=>lines.push(`${i+1}. ${event}`));
+ lines.push('');
+
+ lines.push('BOT DECISION AUDIT');
+ lines.push('------------------');
+ lines.push('Probabilities and deductions below use only the bot’s own hand, public hand counts, and public move history. Intermediate bots apply direct exclusion; Advanced and Expert bots also apply hand-count constraint propagation.');
+ if(game.botAudit.length){
+  game.botAudit.forEach((event,i)=>lines.push(`${i+1}. ${event}`));
+ }else{
+  lines.push('No bot decisions were recorded.');
+ }
+
+ return lines.join('\n');
+}
+
+function openGameReport(){
+ $('reportText').value=buildGameReport();
+ $('reportDialog').showModal();
+}
+
+async function copyGameReport(){
+ const text=buildGameReport();
+ try{
+   await navigator.clipboard.writeText(text);
+   $('copyReportBtn').textContent='Copied';
+   setTimeout(()=>$('copyReportBtn').textContent='Copy report',1200);
+ }catch{
+   $('reportText').focus();
+   $('reportText').select();
+   document.execCommand('copy');
+ }
+}
+
+function downloadGameReport(){
+ const text=buildGameReport();
+ const blob=new Blob([text],{type:'text/plain;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;
+ a.download=`fish-game-report-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.txt`;
+ document.body.appendChild(a);
+ a.click();
+ a.remove();
+ URL.revokeObjectURL(url);
+}
+
+function analyze(){const t=Number($('targetSelect').value),c=$('cardSelect').value;if(!c)return;const K=game.knowledge[0],k=setKey(c),parts=[];if(K.exact[c]===t)parts.push('This is a guaranteed hit.');else if(K.noCard[`${t}|${c}`])parts.push('This player has already been ruled out for that card.');else parts.push('The exact location is not publicly known.');if(K.inSet[`${t}|${k}`])parts.push(`${playerNames[t]} is publicly active in this set.`);parts.push(estimateDanger(t,0)>=3?'A miss may give a dangerous opponent the turn.':'The turn-control downside appears moderate.');$('hint').style.display='block';$('hint').textContent=parts.join(' ')}
+function openClaim(){
+ if(game.over||game.hands[0].length===0)return;
+ claimPausedBot=!game.over&&game.current!==0;
+ if(claimPausedBot)clearTimeout(botTimer);
+ botMoveInProgress=false;
+ $('nextBotBtn').disabled=true;
+ $('claimSet').innerHTML='';
+ for(const k of allSetKeys())if(!game.claimed.has(k)){
+  const o=document.createElement('option');o.value=k;o.textContent=setLabel(k);$('claimSet').appendChild(o)
+ }
+ buildAssignments();$('claimDialog').showModal()
+}
+function resumeAfterClaimDialog(){
+ const resume=claimPausedBot&&!game.over&&game.current!==0;
+ claimPausedBot=false;
+ if(resume)scheduleBot()
+}
+function buildAssignments(){const k=$('claimSet').value;$('claimAssignments').innerHTML='';for(const c of cardsInSet(k)){const w=document.createElement('div'),l=document.createElement('label'),s=document.createElement('select');l.className='small';l.textContent=cardName(c);s.dataset.card=c;for(const p of teammatesOf(0)){const o=document.createElement('option');o.value=p;o.textContent=playerNames[p];s.appendChild(o)}w.append(l,s);$('claimAssignments').appendChild(w)}}
+function openRename(){$('nameFields').innerHTML='';for(let p=1;p<game.numPlayers;p++){const w=document.createElement('div');w.className='person-box';w.innerHTML=`<label class="small">Player ${p} name</label><input data-name="${p}" value="${playerNames[p]}"><label class="small" style="margin-top:8px">Difficulty</label><select data-diff="${p}">${['novice','intermediate','advanced','expert'].map(x=>`<option value="${x}" ${playerDifficulties[p]===x?'selected':''}>${cap(x)}</option>`).join('')}</select>`;$('nameFields').appendChild(w)}$('renameDialog').showModal()}
+function saveNames(){document.querySelectorAll('[data-name]').forEach(i=>playerNames[+i.dataset.name]=i.value.trim()||`Bot ${i.dataset.name}`);document.querySelectorAll('[data-diff]').forEach(s=>playerDifficulties[+s.dataset.diff]=s.value);$('renameDialog').close();render()}
+
+$('newGameBtn').onclick=newGame;$('gameMode').onchange=newGame;
+$('historyDepth').onchange=()=>{game.historyDepth=+$('historyDepth').value;renderLog()};
+$('botPacing').onchange=()=>{
+ game.botPacing=$('botPacing').value;
+ clearTimeout(botTimer);
+ botMoveInProgress=false;
+
+ if(!game.over&&game.current!==0){
+  scheduleBot();
+ }else{
+  render();
+ }
+};
+$('nextBotBtn').onclick=()=>{
+ if(
+  !game ||
+  game.over ||
+  game.botPacing!=='manual' ||
+  game.current===0 ||
+  botMoveInProgress
+ )return;
+
+ advanceBotOneMove();
+};
+$('askBtn').onclick=()=>performAsk(0,+$('targetSelect').value,$('cardSelect').value);$('hintBtn').onclick=analyze;
+$('claimBtn').onclick=openClaim;$('claimSet').onchange=buildAssignments;$('cancelClaim').onclick=()=>{$('claimDialog').close();resumeAfterClaimDialog()};
+$('submitClaim').onclick=()=>{
+ const assignment={};
+ document.querySelectorAll('#claimAssignments select').forEach(
+  select=>assignment[select.dataset.card]=Number(select.value)
+ );
+
+ const setK=$('claimSet').value;
+ $('claimDialog').close();
+ claimPausedBot=false;
+
+ resolveClaim(0,setK,assignment);
+
+ if(!game.over&&game.current!==0){
+  scheduleBot();
+ }else{
+  render();
+ }
+};
+$('renameBotsBtn').onclick=openRename;$('cancelRename').onclick=()=>$('renameDialog').close();$('saveNames').onclick=saveNames;
+$('gameReportBtn').onclick=openGameReport;
+$('copyReportBtn').onclick=copyGameReport;
+$('downloadReportBtn').onclick=downloadGameReport;
+$('closeReportBtn').onclick=()=>$('reportDialog').close();
+$('rulesBtn').onclick=()=>$('rulesDialog').showModal();$('closeRules').onclick=()=>$('rulesDialog').close();
+newGame();
+})();
+</script>
+</body></html>
