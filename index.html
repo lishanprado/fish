@@ -42,10 +42,10 @@ main{max-width:1480px;margin:auto;padding:22px;display:grid;grid-template-column
 .section-title{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}.section-title h2{margin:0;font-size:1.02rem;letter-spacing:-.012em}
 #status,#hint{margin-top:13px;padding:11px 12px;border-radius:11px;min-height:44px}#status{background:#eaf5f1;border:1px solid #bfddd4;font-weight:750;color:#184d41}#hint{background:#fff7e8;border:1px solid #eed39f;color:#5f4311;display:none}
 #log{height:485px;overflow:auto;font-size:.88rem;padding-right:3px}.log-line{padding:9px 4px;border-bottom:1px dashed #dce5e2}.log-line:last-child{border-bottom:none}
-dialog{border:none;border-radius:18px;padding:0;max-width:760px;width:calc(100% - 32px);color:var(--ink);background:var(--surface);box-shadow:0 24px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(8,28,23,.52);backdrop-filter:blur(3px)}.modal-body{padding:21px}.modal-footer{display:flex;justify-content:flex-end;gap:9px;padding:13px 20px;border-top:1px solid var(--line);background:var(--surface-soft)}.assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}.person-box{border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--surface-soft)}
+dialog{border:none;border-radius:18px;padding:0;max-width:760px;width:calc(100% - 32px);color:var(--ink);background:var(--surface);box-shadow:0 24px 80px rgba(0,0,0,.28)}dialog::backdrop{background:rgba(8,28,23,.52);backdrop-filter:blur(3px)}.modal-body{padding:21px}.modal-footer{display:flex;justify-content:flex-end;gap:9px;padding:13px 20px;border-top:1px solid var(--line);background:var(--surface-soft)}.assign-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:11px}.person-box{border:1px solid var(--line);border-radius:12px;padding:11px;background:var(--surface-soft)}.rules-intro{margin:0 0 14px;color:var(--muted);line-height:1.55}.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.rule-section{border:1px solid var(--line);border-radius:12px;padding:13px;background:var(--surface-soft)}.rule-section h3{margin:0 0 8px;font-size:.96rem}.rule-section p{margin:0;color:var(--muted);line-height:1.5;font-size:.9rem}.rule-section ul{margin:0;padding-left:19px}.rule-section li{margin:6px 0;line-height:1.45}.rules-note{margin-top:12px;padding:12px;border-radius:12px;background:var(--accent-soft);border:1px solid #c6e5dc;font-size:.9rem;line-height:1.5}.rules-link{display:inline-block;margin-top:12px;font-weight:800;color:var(--accent);text-decoration:none}.rules-link:hover{text-decoration:underline}
 .site-footer{max-width:1480px;margin:0 auto;padding:2px 22px 28px;color:var(--muted);font-size:.8rem;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
 @media(max-width:980px){main{grid-template-columns:1fr}.players{grid-template-columns:repeat(3,1fr)}#log{height:320px}}
-@media(max-width:680px){.header-inner,main{padding-left:14px;padding-right:14px}.header-inner{align-items:flex-start}.brand-mark{width:42px;height:42px}.header-actions{width:100%}.header-actions button{flex:1}.players{grid-template-columns:repeat(2,minmax(0,1fr))}.controls,.grid2,.assign-grid{grid-template-columns:1fr}.scorebar{font-size:.9rem}.panel{padding:14px;border-radius:15px}.section-title{display:block}.section-title .small{display:block;margin-top:4px}.card{width:70px;height:96px}.site-footer{padding-left:14px;padding-right:14px}}
+@media(max-width:680px){.header-inner,main{padding-left:14px;padding-right:14px}.header-inner{align-items:flex-start}.brand-mark{width:42px;height:42px}.header-actions{width:100%}.header-actions button{flex:1}.players{grid-template-columns:repeat(2,minmax(0,1fr))}.controls,.grid2,.assign-grid,.rules-grid{grid-template-columns:1fr}.scorebar{font-size:.9rem}.panel{padding:14px;border-radius:15px}.section-title{display:block}.section-title .small{display:block;margin-top:4px}.card{width:70px;height:96px}.site-footer{padding-left:14px;padding-right:14px}}
 @media(max-width:420px){.players{grid-template-columns:1fr}.actions button{flex:1}.card{width:66px}}
 
 </style>
@@ -122,16 +122,48 @@ dialog{border:none;border-radius:18px;padding:0;max-width:760px;width:calc(100% 
 
 <dialog id="renameDialog"><div class="modal-body"><h2 style="margin-top:0">Rename players</h2><p class="small">Choose each computer-controlled player’s name and difficulty. Hard facts are respected at every level; higher levels differ mostly in strategic judgment.</p><div id="nameFields" class="assign-grid"></div></div><div class="modal-footer"><button id="cancelRename">Cancel</button><button id="saveNames" class="primary">Save</button></div></dialog>
 
-<dialog id="rulesDialog"><div class="modal-body"><h2 style="margin-top:0">How this simulator works</h2><ul>
-<li>In 3v3, the deck has 54 cards: the standard 52-card deck plus a red and black joker. It includes nine six-card sets.</li>
-<li>The middle set is the four 8s plus the red joker and black joker.</li>
-<li>In 2v2, the middle set is removed, leaving 48 cards and eight sets, divisible evenly among four players.</li>
-<li>Low sets are 2–7. High sets are 9–Ace. The middle set exists only in 3v3.</li>
-<li>If a request succeeds, the asker keeps the turn. If it fails, the target gets the turn.</li><li>Any player may declare a set at any moment, including during another player’s turn. A correct or incorrect declaration removes all six cards in that set from every hand; an incorrect declaration awards the set to the opposing team.</li>
-<li>If you reach zero cards, you enter spectator mode: asking and declaring are disabled, while bot turns continue normally. Bots continue playing until one team reaches the winning score.</li><li>3v3 ends when a team reaches five sets. 2v2 ends when a team reaches four sets.</li>
-<li>After the game, you can view, copy, or download a complete report with starting hands and every move.</li>
-<li>Public denials are hard exclusions. Intermediate, Advanced, and Expert bots repeatedly propagate those exclusions; Advanced and Expert also use public hand counts to force card locations and recognize teammate signalling.</li><li>Bots use intentional known misses only when every legal request is known to miss.</li><li>Bot move selection is isolated behind a fair-play firewall. It receives only the bot’s own hand, public hand counts, and public move history; it cannot inspect hidden opposing or teammate cards.</li><li>Manual bot turns were tested in this build. Bots do not require certainty. When a card is unknown, they estimate who is most likely to hold it and compare the expected value of a hit against the cost of giving that opponent the turn.</li><li>Bot pacing can be automatic or manual.</li>
-</ul></div><div class="modal-footer"><button id="closeRules" class="primary">Close</button></div></dialog>
+<dialog id="rulesDialog">
+<div class="modal-body">
+<h2 style="margin-top:0">How to play Fish</h2>
+<p class="rules-intro">Fish is a team deduction game. Work out where the cards are, collect complete six-card sets with your teammates, and declare those sets before the other team does.</p>
+<div class="rules-grid">
+<section class="rule-section"><h3>1. Cards and teams</h3><ul>
+<li><strong>3v3:</strong> 54 cards and nine sets, including two jokers.</li>
+<li><strong>2v2:</strong> 48 cards and eight sets; the 8s and jokers are removed.</li>
+<li>Each suit has a <strong>low set</strong> (2–7) and a <strong>high set</strong> (9–Ace).</li>
+<li>In 3v3, the ninth set is the four 8s plus the red and black jokers.</li>
+</ul></section>
+<section class="rule-section"><h3>2. Asking for a card</h3><ul>
+<li>On your turn, choose an opponent and ask for one exact card.</li>
+<li>You may ask only from a set represented in your own hand.</li>
+<li>You may not ask for a card you already hold.</li>
+<li>If the opponent has it, they give it to you and you keep the turn.</li>
+<li>If they do not, they take the next turn.</li>
+</ul></section>
+<section class="rule-section"><h3>3. Use the clues</h3><p>Every ask reveals information. A successful ask shows who had the card. A denial proves that player does not have it. Also track which sets players ask from and how many cards they have left.</p></section>
+<section class="rule-section"><h3>4. Declaring a set</h3><ul>
+<li>You may declare at any time, even during another player’s turn.</li>
+<li>Name a set and assign all six cards to their exact holders on your team.</li>
+<li>A correct declaration gives your team the set.</li>
+<li>A wrong declaration gives the set to the opposing team.</li>
+<li>Either way, all six cards leave play.</li>
+</ul></section>
+<section class="rule-section"><h3>5. Winning</h3><ul>
+<li>In 3v3, the first team to five sets wins.</li>
+<li>In 2v2, the first team to four sets wins.</li>
+<li>If you run out of cards, you spectate while the remaining players finish.</li>
+</ul></section>
+<section class="rule-section"><h3>6. Simulator tools</h3><ul>
+<li><strong>Analyze move</strong> gives a short deduction-based hint.</li>
+<li>Bot turns can run automatically or one move at a time.</li>
+<li>After a game, you can view, copy, or download a full report.</li>
+</ul></section>
+</div>
+<div class="rules-note"><strong>About the bots:</strong> Bots use only their own cards and public information. Stronger difficulties make more complete deductions from denials, hand counts, previous asks, and teammate signals; they cannot inspect hidden hands.</div>
+<a class="rules-link" href="https://www.brynmawr.edu/news/rules-fish" target="_blank" rel="noopener noreferrer">Read the full Bryn Mawr rules guide ↗</a>
+</div>
+<div class="modal-footer"><button id="closeRules" class="primary">Close</button></div>
+</dialog>
 
 <script>
 (()=>{
