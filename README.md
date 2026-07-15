@@ -40,4 +40,4 @@ robots.txt            Search-crawler instructions
 
 ## Development note
 
-The simulator is intentionally self-contained. The HTML, CSS, and JavaScript are all in `index.html`, which makes deployment and sharing simple. The bot decision firewall is designed to limit strategy code to the bot's own hand, public hand counts, and public move history.
+The simulator is intentionally self-contained. The HTML, CSS, and JavaScript are all in `index.html`, which makes deployment and sharing simple. The bot decision firewall is designed to limit strategy code to the bot's own hand, public hand counts, and public move history. Also, note this was almost primarily by ChatGPT, and I made this just for fun, for my friends to use.
