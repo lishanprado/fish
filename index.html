@@ -99,7 +99,7 @@ dialog{border:none;border-radius:18px;padding:0;max-width:760px;width:calc(100% 
 <aside>
 <div class="panel"><div class="section-title"><h2>Recent moves</h2><span class="small" id="historyLabel">Last 2 moves</span></div><div id="log"></div></div>
 <div class="panel" style="margin-top:16px"><div class="section-title"><h2>Bot strategy</h2></div>
-<div class="small">Novice remembers hard public facts but guesses too freely. Intermediate uses direct public facts and exclusion-based signalling. Advanced also combines exclusions with public hand counts, retaliation risk, set completion, and turn control. Expert applies the same deductions most aggressively with tighter evaluation and almost no noviceness.</div>
+<div class="small">Novice remembers explicit transfers and denials but mostly guesses. Intermediate also recognizes that every legal ask proves the asker holds that set. Advanced tracks repeated asks, omitted-card signals, teammate requests, and public hand counts. Expert propagates those clues aggressively and gives five-card omission patterns near-decisive weight while still respecting later public transfers.</div>
 </div>
 </aside>
 </main>
@@ -223,7 +223,7 @@ function sortHand(h){
  h.sort((a,b)=>{const A=parseCard(a),B=parseCard(b);if(A.joker&&!B.joker)return 1;if(!A.joker&&B.joker)return-1;if(A.joker&&B.joker)return A.color.localeCompare(B.color);return A.suit-B.suit||order.indexOf(A.rank)-order.indexOf(B.rank)})
 }
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function makeKnowledge(){return Array.from({length:game.numPlayers},()=>({exact:{},inSet:{},noCard:{}}))}
+function makeKnowledge(){return Array.from({length:game.numPlayers},()=>({exact:{},inSet:{},noCard:{},askEvidence:{}}))}
 function markExactAll(c,h){
  for(const K of game.knowledge){
   K.exact[c]=h;
@@ -232,6 +232,17 @@ function markExactAll(c,h){
 }
 function markNoAll(p,c){for(const K of game.knowledge){K.noCard[`${p}|${c}`]=true;if(K.exact[c]===p)delete K.exact[c]}}
 function markInAll(p,k){for(const K of game.knowledge)K.inSet[`${p}|${k}`]=true}
+function markAskAll(p,k,c,success){
+ for(const K of game.knowledge){
+  const key=`${p}|${k}`;
+  if(!K.askEvidence[key])K.askEvidence[key]={total:0,successes:0,cards:{},lastTurn:0};
+  const e=K.askEvidence[key];
+  e.total++;
+  if(success)e.successes++;
+  e.cards[c]=(e.cards[c]||0)+1;
+  e.lastTurn=game.askHistory.length+1;
+ }
+}
 function initOwnKnowledge(){for(let p=0;p<game.numPlayers;p++)for(const c of game.hands[p])game.knowledge[p].exact[c]=p}
 
 function newGame(){
@@ -243,7 +254,7 @@ function newGame(){
  const hands=Array.from({length:n},()=>[]);
  deck.forEach((c,i)=>hands[i%n].push(c));hands.forEach(sortHand);
  const startingHands=hands.map(h=>[...h]);
- game={numPlayers:n,includeMiddle,hands,startingHands,current:Math.floor(Math.random()*n),score:{A:0,B:0},claimed:new Set(),log:[],events:[],askHistory:[],botAudit:[],knowledge:null,over:false,historyDepth:Number($('historyDepth').value),botPacing:$('botPacing').value};
+ game={numPlayers:n,includeMiddle,hands,startingHands,current:Math.floor(Math.random()*n),score:{A:0,B:0},claimed:new Set(),log:[],events:[],askHistory:[],botAudit:[],knowledge:null,over:false,historyDepth:Number($('historyDepth').value),botPacing:$('botPacing').value,forcedDeclarationNoticeTeam:null};
  game.knowledge=makeKnowledge();initOwnKnowledge();
  $('subtitle').textContent=`You are on Team A in ${n===6?'3v3':'2v2'} mode.`;
  logLine(`New ${n===6?'3v3':'2v2'} game. <strong>${playerNames[game.current]}</strong> starts.`);
@@ -277,6 +288,9 @@ function render(){
   $('status').textContent=
    `Game over. Team ${game.score.A>game.score.B?'A':'B'} wins `+
    `${Math.max(game.score.A,game.score.B)}–${Math.min(game.score.A,game.score.B)}.`;
+ }else if(noOpponentEndgameActive()&&game.current===0){
+  $('status').textContent=
+   'The opposing team has no cards. You must declare a remaining set; asking is no longer possible.';
  }else if(humanIsSpectating()){
   $('status').textContent=
    `You have no cards left and are spectating. `+
@@ -290,7 +304,8 @@ function render(){
  $('askBtn').disabled=
   game.over||
   game.current!==0||
-  game.hands[0].length===0;
+  game.hands[0].length===0||
+  noOpponentEndgameActive();
 
  $('hintBtn').disabled=$('askBtn').disabled;
 
@@ -370,6 +385,7 @@ function performAsk(a,t,c){
  if(game.over)return;const k=setKey(c);if(teamOf(a)===teamOf(t)||!game.hands[a].some(x=>setKey(x)===k))return;
  markInAll(a,k);markNoAll(a,c);
  const success=hasCard(t,c);
+ markAskAll(a,k,c,success);
  game.askHistory.push({asker:a,target:t,card:c,setK:k,success});
  if(success){removeCard(t,c);addCard(a,c);markExactAll(c,a);logLine(`<strong>${playerNames[a]}</strong> asked ${playerNames[t]} for the ${cardName(c)}: <strong>yes</strong>.`);game.current=a}
  else{markNoAll(t,c);logLine(`<strong>${playerNames[a]}</strong> asked ${playerNames[t]} for the ${cardName(c)}: no.`);game.current=t}
@@ -409,11 +425,11 @@ function inferKnowledgeForBot(p){
  let passChanged=true;
  let guard=0;
 
- while(passChanged&&guard++<20){
+ while(passChanged&&guard++<24){
   passChanged=false;
 
-  // Basic Fish deduction: once every other possible holder has publicly
-  // denied a card, the remaining holder is forced.
+  // Intermediate and above perform direct exclusion: if only one current
+  // holder remains possible after public denials/transfers, that holder is exact.
   for(const setK of allSetKeys()){
    if(game.claimed.has(setK))continue;
    for(const card of cardsInSet(setK)){
@@ -427,11 +443,13 @@ function inferKnowledgeForBot(p){
    }
   }
 
+  // Repeated and omitted asks remain soft evidence here because a player can
+  // later lose an earlier anchor card. Advanced and Expert apply that evidence
+  // strongly in move evaluation without promoting stale history to a false fact.
+
   if(!useHandCounts)continue;
 
-  // Advanced/Expert also combine those exclusions with public hand counts.
-  // If a player still needs N unknown cards and exactly N cards can possibly
-  // belong to that player, all of them are forced to that player.
+  // Advanced and Expert combine public exclusions with public hand counts.
   const exactCounts=Array(game.numPlayers).fill(0);
   for(const setK of allSetKeys()){
    if(game.claimed.has(setK))continue;
@@ -573,7 +591,12 @@ function makeBotView(p){
   knowledge:{
    exact:{...K.exact},
    inSet:{...K.inSet},
-   noCard:{...K.noCard}
+   noCard:{...K.noCard},
+   askEvidence:Object.fromEntries(
+    Object.entries(K.askEvidence).map(([key,value])=>[key,{
+     total:value.total,successes:value.successes,lastTurn:value.lastTurn,cards:{...value.cards}
+    }])
+   )
   }
  };
 
@@ -626,6 +649,21 @@ function viewDanger(view,target){
  return danger;
 }
 
+function askEvidenceForView(view,player,setK){
+ return view.knowledge.askEvidence[`${player}|${setK}`]||null;
+}
+
+function omittedAskSignal(view,player,setK,card){
+ const evidence=askEvidenceForView(view,player,setK);
+ if(!evidence)return 0;
+ const asked=new Set(Object.keys(evidence.cards));
+ if(asked.has(card))return 0;
+ const omitted=cardsInSet(setK).filter(c=>!asked.has(c));
+ if(omitted.length===1&&omitted[0]===card)return 2;
+ if(asked.size>=3)return 1;
+ return 0;
+}
+
 function candidateWeights(view,card){
  const K=view.knowledge;
  const exact=K.exact[card];
@@ -643,16 +681,34 @@ function candidateWeights(view,card){
   if(K.noCard[`${holder}|${card}`])continue;
 
   let weight=1;
+  const evidence=askEvidenceForView(view,holder,setK);
+  const distinctAsks=evidence?Object.keys(evidence.cards).length:0;
 
-  // A legal ask proves that the player held at least one card in the set at
-  // that moment. This is public evidence, though it may become stale.
-  if(K.inSet[`${holder}|${setK}`])weight*=1.75;
+  if(view.level==='intermediate'){
+   if(K.inSet[`${holder}|${setK}`])weight*=1.55;
+   weight*=1+0.08*distinctAsks;
+  }else if(view.level==='advanced'){
+   if(K.inSet[`${holder}|${setK}`])weight*=1.9;
+   weight*=1+0.22*distinctAsks;
+   const omitted=omittedAskSignal(view,holder,setK,card);
+   if(omitted===1)weight*=1.7;
+   if(omitted===2)weight*=3.0;
+   weight*=0.75+0.05*Math.min(10,view.handCounts[holder]);
+  }else if(view.level==='expert'){
+   if(K.inSet[`${holder}|${setK}`])weight*=2.25;
+   weight*=1+0.34*distinctAsks;
+   const omitted=omittedAskSignal(view,holder,setK,card);
+   if(omitted===1)weight*=2.25;
+   if(omitted===2)weight*=5.0;
+   weight*=0.65+0.07*Math.min(10,view.handCounts[holder]);
+  }
 
-  // Publicly known concentration in the same set modestly increases weight.
   const knownSameSet=cardsInSet(setK).filter(
    other=>K.exact[other]===holder
   ).length;
-  weight*=1+0.30*knownSameSet;
+  const concentration=view.level==='novice'?0.10:
+   view.level==='intermediate'?0.24:view.level==='advanced'?0.38:0.52;
+  weight*=1+concentration*knownSameSet;
 
   weights[holder]=weight;
  }
@@ -735,6 +791,15 @@ function evaluateBotMove(view,move){
  const publicTeamCount=knownCountInSetForTeamView(view,view.team,setK);
  const targetKnownCount=knownCountInSetForPlayerView(view,target,setK);
  const danger=viewDanger(view,target);
+ const targetEvidence=askEvidenceForView(view,target,setK);
+ const targetDistinctAsks=targetEvidence?Object.keys(targetEvidence.cards).length:0;
+ const omittedSignal=omittedAskSignal(view,target,setK,card);
+ const teammateDemand=view.activePlayers
+  .filter(other=>other!==view.player&&teamOf(other)===view.team)
+  .reduce((sum,other)=>{
+   const evidence=askEvidenceForView(view,other,setK);
+   return sum+(evidence&&evidence.cards[card]?evidence.cards[card]:0);
+  },0);
 
  let hitValue=
   config.hitCardValue+
@@ -760,6 +825,13 @@ function evaluateBotMove(view,move){
 
  if(K.inSet[`${target}|${setK}`])score+=8;
  score+=targetKnownCount*5;
+ if(view.level==='intermediate')score+=Math.min(3,targetDistinctAsks)*2;
+ if(view.level==='advanced'){
+  score+=targetDistinctAsks*3+omittedSignal*14+teammateDemand*7;
+ }
+ if(view.level==='expert'){
+  score+=targetDistinctAsks*5+omittedSignal*26+teammateDemand*12;
+ }
  if(pHit===0)score-=65;
  score+=Math.random()*config.noise;
 
@@ -777,7 +849,10 @@ function evaluateBotMove(view,move){
    targetKnownInSet:targetKnownCount,
    targetPubliclyActive:!!K.inSet[`${target}|${setK}`],
    plausibleHolders,
-   danger
+   danger,
+   targetDistinctAsks,
+   omittedSignal,
+   teammateDemand
   }
  };
 }
@@ -892,6 +967,12 @@ function recordBotDecision(view,move){
    `${audit.targetKnownInSet} publicly located card(s) in this set at target`
   );
  }
+ if(audit.targetDistinctAsks){
+  reasonParts.push(`${audit.targetDistinctAsks} distinct ask(s) by target in this set`);
+ }
+ if(audit.omittedSignal===2)reasonParts.push('card is the target’s unique omitted-card signal');
+ else if(audit.omittedSignal===1)reasonParts.push('card fits the target’s omission pattern');
+ if(audit.teammateDemand)reasonParts.push(`teammates asked for this card ${audit.teammateDemand} time(s)`);
  if(audit.danger){
   reasonParts.push(`target danger score ${audit.danger}`);
  }
@@ -936,6 +1017,7 @@ function removeSetFromPlay(setK){
 
   for(let p=0;p<game.numPlayers;p++){
    delete K.inSet[`${p}|${setK}`];
+   delete K.askEvidence[`${p}|${setK}`];
   }
  }
 
@@ -949,30 +1031,99 @@ function removeSetFromPlay(setK){
  return removed;
 }
 
-function resolveNoOpponentCards(){
- const currentTeam=teamOf(game.current);
- const opposingPlayers=activePlayers().filter(p=>teamOf(p)!==currentTeam);
+function teamWithRemainingCards(){
+ const teams=['A','B'].filter(team=>
+  activePlayers().some(p=>teamOf(p)===team&&game.hands[p].length>0)
+ );
+ return teams.length===1?teams[0]:null;
+}
 
- if(opposingPlayers.some(p=>game.hands[p].length>0))return false;
+function noOpponentEndgameActive(){
+ return !!teamWithRemainingCards() &&
+  allSetKeys().some(k=>!game.claimed.has(k));
+}
+
+function prepareForcedDeclaration(){
+ const survivingTeam=teamWithRemainingCards();
+ if(!survivingTeam)return false;
 
  const remainingSets=allSetKeys().filter(k=>!game.claimed.has(k));
  if(!remainingSets.length)return false;
 
- const target=game.numPlayers===6?5:4;
+ const declarer=
+  teamOf(game.current)===survivingTeam&&game.hands[game.current].length>0
+   ? game.current
+   : activePlayers().find(p=>
+      teamOf(p)===survivingTeam&&game.hands[p].length>0
+     );
 
- for(const k of remainingSets){
-  if(game.score[currentTeam]>=target)break;
-  game.score[currentTeam]++;
-  game.claimed.add(k);
-  const removed=removeSetFromPlay(k);
+ if(declarer===undefined)return false;
+ game.current=declarer;
+
+ if(game.forcedDeclarationNoticeTeam!==survivingTeam){
+  game.forcedDeclarationNoticeTeam=survivingTeam;
   logLine(
-   `<strong>Automatic resolution:</strong> no opponent has cards remaining. `+
-   `Team ${currentTeam} receives ${setLabel(k)} and all ${removed.length} cards are removed.`
+   `<strong>Forced declaration:</strong> Team ${survivingTeam} is the only team `+
+   `with cards remaining. It must declare each remaining set; an incorrect `+
+   `assignment awards that set to the opposing team.`
   );
  }
 
- checkGameOver();
- render();
+ return true;
+}
+
+function buildForcedBotAssignment(p,setK){
+ inferKnowledgeForBot(p);
+ const K=game.knowledge[p];
+ const teammates=teammatesOf(p).filter(t=>game.hands[t].length>0);
+ const capacities={};
+ for(const t of teammates)capacities[t]=game.hands[t].length;
+
+ const assignment={};
+ const unknown=[];
+ for(const card of cardsInSet(setK)){
+  const exact=K.exact[card];
+  if(exact!==undefined&&teamOf(exact)===teamOf(p)){
+   assignment[card]=exact;
+   capacities[exact]=Math.max(0,(capacities[exact]||0)-1);
+  }else unknown.push(card);
+ }
+
+ for(const card of unknown){
+  let candidates=teammates.filter(t=>
+   !K.noCard[`${t}|${card}`]&&(capacities[t]||0)>0
+  );
+  if(!candidates.length)candidates=teammates.filter(t=>(capacities[t]||0)>0);
+  if(!candidates.length)candidates=teammates;
+
+  candidates.sort((a,b)=>{
+   const aSignal=K.inSet[`${a}|${setK}`]?1:0;
+   const bSignal=K.inSet[`${b}|${setK}`]?1:0;
+   return bSignal-aSignal||(capacities[b]||0)-(capacities[a]||0);
+  });
+
+  const holder=candidates[0];
+  assignment[card]=holder;
+  capacities[holder]=Math.max(0,(capacities[holder]||0)-1);
+ }
+ return assignment;
+}
+
+function forceBotEndgameDeclaration(p){
+ const remainingSets=allSetKeys().filter(k=>!game.claimed.has(k));
+ if(!remainingSets.length)return false;
+
+ inferKnowledgeForBot(p);
+ const K=game.knowledge[p];
+ remainingSets.sort((a,b)=>{
+  const knownA=cardsInSet(a).filter(c=>K.exact[c]!==undefined).length;
+  const knownB=cardsInSet(b).filter(c=>K.exact[c]!==undefined).length;
+  return knownB-knownA;
+ });
+
+ const setK=remainingSets[0];
+ const assignment=buildForcedBotAssignment(p,setK);
+ resolveClaim(p,setK,assignment);
  return true;
 }
 function scheduleBot(){
@@ -989,7 +1140,10 @@ function scheduleBot(){
   return;
  }
 
- if(resolveNoOpponentCards())return;
+ if(prepareForcedDeclaration()){
+  render();
+  if(game.current===0)return;
+ }
 
  if(game.botPacing==='manual'){
   $('nextBotBtn').disabled=false;
@@ -1020,9 +1174,17 @@ function advanceBotOneMove(){
    return;
   }
 
-  if(resolveNoOpponentCards())return;
-
+  const forcedEndgame=prepareForcedDeclaration();
   const actingPlayer=game.current;
+
+  if(forcedEndgame){
+   if(forceBotEndgameDeclaration(actingPlayer)){
+    botMoveInProgress=false;
+    if(!game.over&&game.current!==0)scheduleBot();
+    else render();
+    return;
+   }
+  }
 
   // A bot holding a fully known set can have no legal request. It must
   // declare rather than freeze.
@@ -1287,7 +1449,7 @@ function buildGameReport(){
 
  lines.push('BOT DECISION AUDIT');
  lines.push('------------------');
- lines.push('Probabilities and deductions below use only the bot’s own hand, public hand counts, and public move history. Intermediate bots apply direct exclusion; Advanced and Expert bots also apply hand-count constraint propagation.');
+ lines.push('Probabilities and deductions below use only the bot’s own hand, public hand counts, and public move history. Intermediate bots use legal-ask set signals and direct exclusion. Advanced bots also use repeated-ask and omitted-card signals plus hand-count propagation. Expert bots weight five-card omission patterns and teammate signalling most aggressively without treating stale ask history as hidden certainty.');
  if(game.botAudit.length){
   game.botAudit.forEach((event,i)=>lines.push(`${i+1}. ${event}`));
  }else{
